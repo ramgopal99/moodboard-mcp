@@ -58,6 +58,11 @@ describe("RSS parsing", () => {
     expect(board.pins[0].media?.images?.["736x"].url).toBe("https://i.pinimg.com/736x/aa/bb/cc/hash1.jpg");
     expect(board.pins[1]).toMatchObject({ id: "e1_AbC-d", description: "Mobile onboarding flow" });
   });
+
+  it("does not leave double-escaped entities in text", () => {
+    const xml = SAMPLE_RSS.replace("Mobile onboarding flow", "You&amp;#39;ll love it");
+    expect(parseRss(xml).pins[1].description).toBe("You'll love it");
+  });
 });
 
 describe("fetchPublicBoard", () => {

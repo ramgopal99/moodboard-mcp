@@ -90,8 +90,9 @@ export function parseRss(xml: string): PublicBoard {
     const id = link.match(/\/pin\/([^/?#]+)/)?.[1] ?? `item-${i + 1}`;
     const descHtml = tag(item, "description") ?? "";
     const img = descHtml.match(/<img[^>]+src="([^"]+)"/i)?.[1];
-    const text = descHtml.replace(/<[^>]+>/g, "").trim();
-    const title = tag(item, "title");
+    // The description is escaped HTML; after stripping tags its text can still hold entities.
+    const text = decodeEntities(descHtml.replace(/<[^>]+>/g, "")).trim();
+    const title = tag(item, "title") && decodeEntities(tag(item, "title")!);
     return {
       id,
       title: title || undefined,
