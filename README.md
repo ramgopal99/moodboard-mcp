@@ -2,12 +2,12 @@
 
 **Turn your Pinterest boards into design references for AI coding assistants.**
 
-`moodboard-mcp` is an open-source [Model Context Protocol](https://modelcontextprotocol.io) server. It lets Claude, Cursor, VS Code and other MCP clients **log in to your Pinterest with the official OAuth flow**, **see the images on your boards**, and **extract design tokens** (palette, color roles, contrast, CSS variables, Tailwind colors) so they can build UI in the style you like.
+`moodboard-mcp` is an open-source [Model Context Protocol](https://modelcontextprotocol.io) server. Paste **any public Pinterest board link** (no account, no keys, no setup) and Claude, Cursor, VS Code or any MCP client can **see the images** and **extract design tokens** (palette, color roles, contrast, CSS variables, Tailwind colors) to build UI in that style. Optionally **log in with the official Pinterest OAuth flow** to use your private boards too.
 
 ```
-You:    Use my "SaaS dashboards" board to design a settings page.
-Claude: → list_boards → get_board_pins (sees 8 images) → extract_design_tokens
-        → writes a style guide → builds the page with your palette.
+You:    Design a settings page in the style of https://www.pinterest.com/jane/saas-dashboards/
+Claude: → get_public_board (sees 8 images) → extract_design_tokens
+        → writes a style guide → builds the page with that palette.
 ```
 
 [![CI](https://github.com/ramgopal99/moodboard-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ramgopal99/moodboard-mcp/actions/workflows/ci.yml)
@@ -20,6 +20,7 @@ Claude: → list_boards → get_board_pins (sees 8 images) → extract_design_to
 
 | Tool                    | What it does                                                                                         |
 | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `get_public_board`      | **No login.** Reads any public board or profile from its link (latest ~25 pins), with images.        |
 | `pinterest_login`       | Official Pinterest OAuth login in your browser. Token is stored locally and refreshed automatically. |
 | `pinterest_auth_status` | Shows which Pinterest account is connected.                                                          |
 | `pinterest_logout`      | Deletes the local token.                                                                             |
@@ -31,74 +32,69 @@ Claude: → list_boards → get_board_pins (sees 8 images) → extract_design_to
 
 Prompt: **`moodboard_to_ui`**: "study board X and build Y in the same style".
 
-**Privacy by design:** read-only scopes (`boards:read`, `pins:read`, `user_accounts:read`), runs locally on your machine, no scraping, no cookies, no third-party servers. Your token never leaves your computer except to talk to `api.pinterest.com`.
+**Privacy by design:** runs locally on your machine, no scraping, no cookies, no analytics. Public boards are read from the RSS feeds Pinterest publishes for them. Login uses read-only scopes (`boards:read`, `pins:read`, `user_accounts:read`) and your token is stored only on your computer.
 
 ## Quick start
 
-### 1. Create your own Pinterest app (one time, ~5 minutes)
+### 1. Install
 
-Each user brings their own free Pinterest app. That keeps secrets out of this repo and gives you your own rate limit.
-
-1. You need a Pinterest **business** account (free; you can convert a personal one in settings).
-2. Go to <https://developers.pinterest.com/apps/> → **Connect app** and fill in the form. Request **Trial access**.
-3. In the app settings, add this **Redirect URI**:
-   ```
-   http://localhost:8085/callback
-   ```
-4. Copy the **App ID** and **App secret key**.
-
-> Trial access approval can take a few days. Until it is approved, the API returns `401 ... consumer type is not supported`. That is a Pinterest-side wait, not a bug in this server.
-
-### 2. Add the server to your MCP client
-
-**Claude Desktop (easiest, one click):** download `moodboard-mcp.mcpb` from the [latest release](https://github.com/ramgopal99/moodboard-mcp/releases/latest) and double-click it, or drag it into Claude Desktop → Settings → Extensions. Paste your Pinterest App ID and secret when asked. No Node.js or config editing needed. To build it yourself: `npm run build:mcpb`.
-
-**Claude Desktop (manual)**: edit `claude_desktop_config.json` (Settings → Developer → Edit Config):
-
-```json
-{
-  "mcpServers": {
-    "moodboard": {
-      "command": "npx",
-      "args": ["-y", "moodboard-mcp"],
-      "env": {
-        "PINTEREST_CLIENT_ID": "your-app-id",
-        "PINTEREST_CLIENT_SECRET": "your-app-secret"
-      }
-    }
-  }
-}
-```
+**Claude Desktop (one click):** download `moodboard-mcp.mcpb` from the [latest release](https://github.com/ramgopal99/moodboard-mcp/releases/latest) and double-click it (or drag it into Settings → Extensions). Leave the "Advanced" fields empty. No Node.js or config editing needed.
 
 **Claude Code**
 
 ```bash
-claude mcp add moodboard -e PINTEREST_CLIENT_ID=your-app-id -e PINTEREST_CLIENT_SECRET=your-app-secret -- npx -y moodboard-mcp
+claude mcp add moodboard -- npx -y moodboard-mcp
 ```
 
-**Cursor**: `~/.cursor/mcp.json` uses the same JSON as Claude Desktop.
+**Cursor / other clients**: add to your MCP config (e.g. `~/.cursor/mcp.json`):
 
-### 3. Log in
+```json
+{
+  "mcpServers": {
+    "moodboard": { "command": "npx", "args": ["-y", "moodboard-mcp"] }
+  }
+}
+```
 
-Ask your assistant: **"Log in to Pinterest."** A browser tab opens, you approve, done.
+### 2. Use it (no login)
 
-Then try:
+Copy a board link from Pinterest (browser address bar, or Share → Copy link) and ask:
 
-- "List my Pinterest boards."
-- "Show me the pins on my _Mobile UI_ board."
-- "Extract design tokens from my _Brand_ board and give me a Tailwind config."
-- Use the `moodboard_to_ui` prompt with a board id and what you want built.
+- "Here's my moodboard: https://www.pinterest.com/username/board-name/. Design a landing page in this style."
+- "Extract the color palette from this board as a Tailwind config: <link>"
+- Use the `moodboard_to_ui` prompt with a board link and what you want built.
+
+Works for any **public** board or profile, on any Pinterest domain, including `pin.it` short links.
+
+### 3. Optional: log in for private boards
+
+Logging in adds `list_boards`, `get_board_pins`, `get_pin`, `search_my_pins` and access to your secret boards.
+
+**One-click login:** when a release includes the hosted login service, just ask _"Log in to Pinterest"_, approve in the browser tab that opens, and you're done. Nothing to configure.
+
+**Use your own Pinterest app (advanced):** needed if the release has no hosted login, or if you prefer not to use it.
+
+1. You need a Pinterest **business** account (free; you can convert a personal one in settings).
+2. Go to <https://developers.pinterest.com/apps/> → **Connect app**, request **Trial access**, and add the redirect URI `http://localhost:8085/callback`.
+3. Put the **App ID** and **App secret** in the extension's Advanced fields, or set `PINTEREST_CLIENT_ID` / `PINTEREST_CLIENT_SECRET` in your MCP config.
+
+> Trial access approval can take a few days. Until it is approved, the API returns `401 ... consumer type is not supported`.
+
+### How login works (for the curious)
+
+Pinterest's token endpoint always requires an app secret, and a secret can't be shipped inside open-source code. So the project runs a tiny [auth broker](broker/README.md) that holds the secret and forwards the token request. Your token comes straight back to your computer; the broker never stores or logs it. You can always skip it by using your own app.
 
 ## Configuration
 
-| Variable                  | Default            | Description                                                   |
-| ------------------------- | ------------------ | ------------------------------------------------------------- |
-| `PINTEREST_CLIENT_ID`     | (none)             | Your Pinterest App ID.                                        |
-| `PINTEREST_CLIENT_SECRET` | (none)             | Your Pinterest App secret.                                    |
-| `PINTEREST_ACCESS_TOKEN`  | (none)             | Optional static token (skips OAuth), handy for quick testing. |
-| `PINTEREST_REDIRECT_PORT` | `8085`             | Local port for the OAuth callback. Must match your app.       |
-| `PINTEREST_SANDBOX`       | `false`            | Use `api-sandbox.pinterest.com`.                              |
-| `MOODBOARD_MCP_HOME`      | `~/.moodboard-mcp` | Where the token file is stored.                               |
+| Variable                    | Default            | Description                                                   |
+| --------------------------- | ------------------ | ------------------------------------------------------------- |
+| `PINTEREST_CLIENT_ID`       | (none)             | Your Pinterest App ID.                                        |
+| `PINTEREST_CLIENT_SECRET`   | (none)             | Your Pinterest App secret.                                    |
+| `PINTEREST_ACCESS_TOKEN`    | (none)             | Optional static token (skips OAuth), handy for quick testing. |
+| `PINTEREST_AUTH_BROKER_URL` | built-in           | Hosted login service. Set to `none` to disable.               |
+| `PINTEREST_REDIRECT_PORT`   | `8085`             | Local port for the OAuth callback. Must match your app.       |
+| `PINTEREST_SANDBOX`         | `false`            | Use `api-sandbox.pinterest.com`.                              |
+| `MOODBOARD_MCP_HOME`        | `~/.moodboard-mcp` | Where the token file is stored.                               |
 
 ## Limitations (honest)
 

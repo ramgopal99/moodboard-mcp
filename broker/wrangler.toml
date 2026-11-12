@@ -1,0 +1,11 @@
+name = "moodboard-mcp-auth"
+main = "src/worker.ts"
+compatibility_date = "2026-11-01"
+
+[vars]
+# Public value: your Pinterest App ID.
+PINTEREST_CLIENT_ID = ""
+ALLOWED_REDIRECT_URIS = "http://localhost:8085/callback"
+
+# The secret is NOT stored here. Set it with:
+#   npx wrangler secret put PINTEREST_CLIENT_SECRET

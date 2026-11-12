@@ -1,13 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { Config } from "./config.js";
-import { AuthError, startLoginFlow } from "./auth.js";
+import { AuthError, loginMode, noLoginMessage, startLoginFlow } from "./auth.js";
+import { fetchPublicBoard } from "./publicBoards.js";
 import { deleteToken, readToken, isExpired } from "./tokenStore.js";
 import { Pin, PinterestClient, pickBestImage, summarizePin } from "./pinterest.js";
 import { decodeRgb, fetchImage } from "./images.js";
 import { RGB, buildDesignTokens } from "./palette.js";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.2.0";
 
 type Content = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
 
@@ -56,15 +57,17 @@ export function createServer(deps: ServerDeps): McpServer {
     {
       title: "Log in to Pinterest",
       description:
-        "Starts the official Pinterest OAuth login. Opens the Pinterest consent page in the user's browser and waits briefly for approval. If approval takes longer, returns the URL; call pinterest_auth_status afterwards.",
+        "Starts the official Pinterest OAuth login (needed only for the user's own private/secret boards and search; public boards work without it via get_public_board). Opens the Pinterest consent page in the browser and waits briefly for approval. If approval takes longer, returns the URL; call pinterest_auth_status afterwards.",
       inputSchema: {},
     },
     async () => {
       try {
-        if (config.accessToken)
+        const mode = loginMode(config);
+        if (mode === "static")
           return { content: [text("Using PINTEREST_ACCESS_TOKEN from the environment; no login needed.")] };
+        if (mode === "none") return { content: [text(noLoginMessage())] };
         if (!pendingLogin || pendingLogin.finished) {
-          const flow = startLoginFlow(config);
+          const flow = await startLoginFlow(config, { fetchImpl });
           const entry: NonNullable<typeof pendingLogin> = { url: flow.authorizeUrl, done: flow.done };
           flow.done.then(
             () => (entry.finished = true),
@@ -115,7 +118,16 @@ export function createServer(deps: ServerDeps): McpServer {
           return { content: [text(`Login in progress. Waiting for approval at:\n${pendingLogin.url}`)] };
         if (!config.accessToken) {
           const t = await readToken(config.tokenFile);
-          if (!t) return { content: [text("Not logged in. Call pinterest_login.")] };
+          if (!t)
+            return {
+              content: [
+                text(
+                  loginMode(config) === "none"
+                    ? `Not logged in. ${noLoginMessage()}`
+                    : "Not logged in. Call pinterest_login (public boards work without login via get_public_board).",
+                ),
+              ],
+            };
           if (isExpired(t) && !t.refresh_token) return { content: [text("Login expired. Call pinterest_login.")] };
         }
         const user = await client.getUser();
@@ -140,7 +152,50 @@ export function createServer(deps: ServerDeps): McpServer {
     },
   );
 
-  // ---------- Reading ----------
+  // ---------- No-login: public boards ----------
+
+  server.registerTool(
+    "get_public_board",
+    {
+      title: "Get a public board (no login)",
+      description:
+        "Reads any PUBLIC Pinterest board or profile from its link, with no login or keys. Returns the latest ~25 pins, with images attached so the model can see them. Accepts board URLs on any Pinterest domain, pin.it short links, or 'username/board-name'. Prefer this tool when the user shares a board link.",
+      inputSchema: {
+        board_url: z
+          .string()
+          .min(1)
+          .describe("e.g. https://www.pinterest.com/username/board-name/ or username/board-name"),
+        limit: z.number().int().min(1).max(50).default(25),
+        include_images: z.boolean().default(true),
+        max_images: z
+          .number()
+          .int()
+          .min(0)
+          .max(20)
+          .default(8)
+          .describe("How many images to attach (images use context)."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ board_url, limit, include_images, max_images }) => {
+      try {
+        const board = await fetchPublicBoard(board_url, fetchImpl);
+        const pins = board.pins.slice(0, limit);
+        const header = json({
+          board: board.title,
+          url: board.url,
+          description: board.description,
+          pin_count: pins.length,
+        });
+        if (!include_images) return { content: [header, json(pins.map(summarizePin))] };
+        return { content: [header, ...(await pinsWithImages(pins, max_images))] };
+      } catch (e) {
+        return errorResult(e);
+      }
+    },
+  );
+
+  // ---------- Reading (logged in) ----------
 
   server.registerTool(
     "list_boards",
@@ -253,21 +308,24 @@ export function createServer(deps: ServerDeps): McpServer {
     {
       title: "Extract design tokens",
       description:
-        "Analyzes the images on a board (or a list of pins) and returns a color palette with roles (background, surface, text, muted, accent), WCAG contrast ratios, CSS variables and a Tailwind colors snippet.",
+        "Analyzes the images on a board (public board link, logged-in board id, or a list of pins) and returns a color palette with roles (background, surface, text, muted, accent), WCAG contrast ratios, CSS variables and a Tailwind colors snippet.",
       inputSchema: {
-        board_id: z.string().optional(),
+        board_url: z.string().optional().describe("Public board link; works without login"),
+        board_id: z.string().optional().describe("Board id from list_boards (needs login)"),
         pin_ids: z.array(z.string()).max(50).optional(),
         max_pins: z.number().int().min(1).max(50).default(20),
         colors: z.number().int().min(3).max(12).default(6),
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ board_id, pin_ids, max_pins, colors }) => {
+    async ({ board_url, board_id, pin_ids, max_pins, colors }) => {
       try {
-        if (!board_id && !pin_ids?.length) throw new Error("Provide board_id or pin_ids.");
-        const pins = board_id
-          ? await client.listBoardPins(board_id, max_pins)
-          : await Promise.all(pin_ids!.slice(0, max_pins).map((id) => client.getPin(id)));
+        if (!board_url && !board_id && !pin_ids?.length) throw new Error("Provide board_url, board_id or pin_ids.");
+        const pins = board_url
+          ? (await fetchPublicBoard(board_url, fetchImpl)).pins.slice(0, max_pins)
+          : board_id
+            ? await client.listBoardPins(board_id, max_pins)
+            : await Promise.all(pin_ids!.slice(0, max_pins).map((id) => client.getPin(id)));
         const pixels: RGB[] = [];
         let analyzed = 0;
         for (const pin of pins) {
@@ -299,27 +357,34 @@ export function createServer(deps: ServerDeps): McpServer {
       title: "Build UI from a Pinterest board",
       description: "Study a Pinterest board and build a UI in the same visual style.",
       argsSchema: {
-        board_id: z.string().describe("Pinterest board id (use list_boards to find it)"),
+        board: z.string().describe("Public board link, or a board id from list_boards"),
         build: z.string().describe("What to build, e.g. 'a fitness app home screen'"),
       },
     },
-    ({ board_id, build }) => ({
-      messages: [
-        {
-          role: "user",
-          content: {
-            type: "text",
-            text: [
-              `Use Pinterest board ${board_id} as the visual reference for: ${build}.`,
-              "1. Call get_board_pins with include_images=true and study the images.",
-              "2. Call extract_design_tokens for the same board.",
-              "3. Write a short style guide: color roles, typography feel (serif/sans, weight, scale), spacing density, corner radius, shadows, imagery and iconography, layout patterns, and motion cues.",
-              "4. Build the UI following that style guide, using the extracted tokens. Do not copy any single pin; combine the shared patterns.",
-            ].join("\n"),
+    ({ board, build }) => {
+      const isLink = /pinterest\.|pin\.it|\//i.test(board);
+      return {
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text: [
+                `Use Pinterest board ${board} as the visual reference for: ${build}.`,
+                isLink
+                  ? "1. Call get_public_board with this link and study the images."
+                  : "1. Call get_board_pins with include_images=true and study the images.",
+                isLink
+                  ? "2. Call extract_design_tokens with board_url set to this link."
+                  : "2. Call extract_design_tokens with board_id set to this board.",
+                "3. Write a short style guide: color roles, typography feel (serif/sans, weight, scale), spacing density, corner radius, shadows, imagery and iconography, layout patterns, and motion cues.",
+                "4. Build the UI following that style guide, using the extracted tokens. Do not copy any single pin; combine the shared patterns.",
+              ].join("\n"),
+            },
           },
-        },
-      ],
-    }),
+        ],
+      };
+    },
   );
 
   return server;

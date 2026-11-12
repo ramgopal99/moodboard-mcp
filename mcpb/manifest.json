@@ -3,15 +3,18 @@
   "manifest_version": "0.3",
   "name": "moodboard-mcp",
   "display_name": "Moodboard (Pinterest)",
-  "version": "0.1.0",
-  "description": "Use your Pinterest boards as design references: official OAuth login, images Claude can see, and extracted design tokens.",
-  "long_description": "Log in to Pinterest with the official OAuth flow (read-only), let Claude see the images on your boards, and extract a color palette with roles, contrast ratios, CSS variables and Tailwind colors. Requires your own free Pinterest developer app: see the README.",
+  "version": "0.2.0",
+  "description": "Use Pinterest boards as design references. Paste any public board link (no login), or log in for your own boards. Claude sees the images and gets extracted design tokens.",
+  "long_description": "Works instantly with any PUBLIC Pinterest board link: no account, keys or setup. Claude sees the pin images and can extract a color palette with roles, contrast ratios, CSS variables and Tailwind colors. Optional Pinterest login (official OAuth, read-only) adds your private boards and search.",
   "author": {
     "name": "Ramgopal Bagh",
     "email": "ramgopalbagh009@gmail.com",
     "url": "https://github.com/ramgopal99"
   },
-  "repository": { "type": "git", "url": "https://github.com/ramgopal99/moodboard-mcp" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ramgopal99/moodboard-mcp"
+  },
   "homepage": "https://github.com/ramgopal99/moodboard-mcp",
   "documentation": "https://github.com/ramgopal99/moodboard-mcp#readme",
   "support": "https://github.com/ramgopal99/moodboard-mcp/issues",
@@ -32,41 +35,74 @@
     }
   },
   "tools": [
-    { "name": "pinterest_login", "description": "Log in to Pinterest (official OAuth)" },
-    { "name": "pinterest_auth_status", "description": "Show the connected Pinterest account" },
-    { "name": "pinterest_logout", "description": "Delete the local Pinterest token" },
-    { "name": "list_boards", "description": "List your boards" },
-    { "name": "get_board_pins", "description": "Get pins from a board, with images" },
-    { "name": "get_pin", "description": "Get one pin with its image" },
-    { "name": "search_my_pins", "description": "Search your saved pins" },
-    { "name": "extract_design_tokens", "description": "Palette, color roles, contrast, CSS and Tailwind from a board" }
+    {
+      "name": "get_public_board",
+      "description": "Read any public board from its link (no login)"
+    },
+    {
+      "name": "pinterest_login",
+      "description": "Log in to Pinterest (official OAuth)"
+    },
+    {
+      "name": "pinterest_auth_status",
+      "description": "Show the connected Pinterest account"
+    },
+    {
+      "name": "pinterest_logout",
+      "description": "Delete the local Pinterest token"
+    },
+    {
+      "name": "list_boards",
+      "description": "List your boards"
+    },
+    {
+      "name": "get_board_pins",
+      "description": "Get pins from a board, with images"
+    },
+    {
+      "name": "get_pin",
+      "description": "Get one pin with its image"
+    },
+    {
+      "name": "search_my_pins",
+      "description": "Search your saved pins"
+    },
+    {
+      "name": "extract_design_tokens",
+      "description": "Palette, color roles, contrast, CSS and Tailwind from a board"
+    }
   ],
   "prompts": [
     {
       "name": "moodboard_to_ui",
       "description": "Study a Pinterest board and build a UI in the same style",
-      "arguments": ["board_id", "build"],
-      "text": "Use Pinterest board ${arguments.board_id} as the visual reference for: ${arguments.build}."
+      "arguments": ["board", "build"],
+      "text": "Use Pinterest board ${arguments.board} as the visual reference for: ${arguments.build}."
     }
   ],
-  "compatibility": { "platforms": ["darwin", "win32", "linux"], "runtimes": { "node": ">=20.0.0" } },
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=20.0.0"
+    }
+  },
   "user_config": {
     "pinterest_client_id": {
       "type": "string",
-      "title": "Pinterest App ID",
-      "description": "From developers.pinterest.com/apps. Add http://localhost:8085/callback as a redirect URI in your app.",
+      "title": "Advanced: your own Pinterest App ID",
+      "description": "Not needed for public board links. Only if you want to log in with your own Pinterest developer app.",
       "required": false
     },
     "pinterest_client_secret": {
       "type": "string",
-      "title": "Pinterest App secret",
-      "description": "Your Pinterest app's secret key. Stored by Claude Desktop, never sent anywhere except Pinterest.",
+      "title": "Advanced: your own Pinterest App secret",
+      "description": "Only with your own Pinterest app. Leave empty otherwise.",
       "sensitive": true,
       "required": false
     },
     "pinterest_access_token": {
       "type": "string",
-      "title": "Access token (optional)",
+      "title": "Advanced: access token",
       "description": "Optional: a token generated in the Pinterest developer portal. Skips the OAuth login.",
       "sensitive": true,
       "required": false

@@ -36,3 +36,22 @@ export function mockFetch(routes: Record<string, Handler>) {
 
 export const jsonRes = (v: unknown, status = 200) =>
   new Response(JSON.stringify(v), { status, headers: { "Content-Type": "application/json" } });
+
+export const SAMPLE_RSS = `<?xml version="1.0" encoding="utf-8"?><rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+<channel>
+  <title>UI inspo</title>
+  <link>https://www.pinterest.com/jane/ui-inspo</link>
+  <description>Clean interfaces</description>
+  <item>
+    <title>Dashboard &amp; cards</title>
+    <link>https://www.pinterest.com/pin/123456/</link>
+    <description>&lt;a href=&quot;https://www.pinterest.com/pin/123456/&quot;&gt;&lt;img src=&quot;https://i.pinimg.com/236x/aa/bb/cc/hash1.jpg&quot;&gt;&lt;/a&gt;Dashboard &amp; cards</description>
+    <pubDate>Thu, 12 Nov 2026 10:00:00 GMT</pubDate>
+    <guid>https://www.pinterest.com/pin/123456/</guid>
+  </item>
+  <item>
+    <title>Onboarding</title>
+    <link>https://www.pinterest.com/pin/e1_AbC-d/</link>
+    <description>&lt;img src=&quot;https://i.pinimg.com/236x/dd/ee/ff/hash2.png&quot;&gt;Mobile onboarding flow</description>
+  </item>
+</channel></rss>`;

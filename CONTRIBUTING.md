@@ -28,7 +28,7 @@ Try your changes with the MCP Inspector:
 npx @modelcontextprotocol/inspector node dist/index.js
 ```
 
-You do **not** need Pinterest API access to work on most things: the tests mock the Pinterest API. If you want to test against the real API, create your own Pinterest app (see README) and set `PINTEREST_CLIENT_ID` / `PINTEREST_CLIENT_SECRET`, or `PINTEREST_ACCESS_TOKEN`.
+You do **not** need Pinterest API access to work on most things: the tests mock the Pinterest API, and `get_public_board` works with any public board link. If you want to test against the real API, create your own Pinterest app (see README) and set `PINTEREST_CLIENT_ID` / `PINTEREST_CLIENT_SECRET`, or `PINTEREST_ACCESS_TOKEN`.
 
 ## Project layout
 
@@ -41,6 +41,8 @@ src/
   pinterest.ts   Pinterest API v5 client
   images.ts      image download / resize / decode
   palette.ts     color clustering and design tokens (pure functions)
+  publicBoards.ts  no-login public board feeds
+broker/          optional hosted auth broker (Cloudflare Worker)
 test/            vitest tests (API is mocked)
 ```
 
@@ -56,7 +58,7 @@ test/            vitest tests (API is mocked)
 
 ## Ground rules
 
-- **Official API only.** No scraping, cookie capture, or anything that breaks Pinterest's Terms of Service. PRs that add this will be closed.
+- **Official sources only.** The Pinterest API and the public RSS feeds Pinterest publishes. No HTML scraping, cookie capture, or anything that breaks Pinterest's Terms of Service. PRs that add this will be closed.
 - **Read-only by default.** New write scopes need a strong reason and a discussion issue first.
 - **Never commit secrets.** No tokens, app secrets or `.env` files.
 - Write to **stderr** only; stdout is reserved for the MCP protocol.
