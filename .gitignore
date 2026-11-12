@@ -10,3 +10,5 @@ token.json
 Thumbs.db
 .vscode/
 .idea/
+build/
+dist-mcpb/

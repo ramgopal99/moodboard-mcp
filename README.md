@@ -51,7 +51,9 @@ Each user brings their own free Pinterest app. That keeps secrets out of this re
 
 ### 2. Add the server to your MCP client
 
-**Claude Desktop**: edit `claude_desktop_config.json` (Settings → Developer → Edit Config):
+**Claude Desktop (easiest, one click):** download `moodboard-mcp.mcpb` from the [latest release](https://github.com/ramgopal99/moodboard-mcp/releases/latest) and double-click it, or drag it into Claude Desktop → Settings → Extensions. Paste your Pinterest App ID and secret when asked. No Node.js or config editing needed. To build it yourself: `npm run build:mcpb`.
+
+**Claude Desktop (manual)**: edit `claude_desktop_config.json` (Settings → Developer → Edit Config):
 
 ```json
 {
