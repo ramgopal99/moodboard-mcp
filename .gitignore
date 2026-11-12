@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+token.json
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

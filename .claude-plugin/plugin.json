@@ -1,0 +1,15 @@
+{
+  "name": "moodboard-mcp",
+  "description": "Pinterest boards as design references: official OAuth login, images the model can see, and design tokens.",
+  "version": "0.1.0",
+  "mcpServers": {
+    "moodboard": {
+      "command": "npx",
+      "args": ["-y", "moodboard-mcp"],
+      "env": {
+        "PINTEREST_CLIENT_ID": "${PINTEREST_CLIENT_ID}",
+        "PINTEREST_CLIENT_SECRET": "${PINTEREST_CLIENT_SECRET}"
+      }
+    }
+  }
+}

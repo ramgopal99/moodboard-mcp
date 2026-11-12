@@ -1,0 +1,39 @@
+name: Bug report
+description: Something is not working
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Call get_board_pins with ...\n2. ..."
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: moodboard-mcp version
+      placeholder: "0.1.0 (run: npx moodboard-mcp --version)"
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      placeholder: Claude Desktop / Claude Code / Cursor / VS Code ...
+  - type: input
+    id: env
+    attributes:
+      label: OS and Node.js version
+      placeholder: Windows 11, Node 22
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / error message
+      description: Remove any tokens or secrets before pasting.
+      render: shell

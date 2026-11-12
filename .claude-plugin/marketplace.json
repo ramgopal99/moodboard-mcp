@@ -1,0 +1,11 @@
+{
+  "name": "moodboard-mcp",
+  "owner": { "name": "Ramgopal Bagh" },
+  "plugins": [
+    {
+      "name": "moodboard-mcp",
+      "source": "./",
+      "description": "Pinterest boards as design references for AI coding."
+    }
+  ]
+}

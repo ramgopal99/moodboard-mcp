@@ -1,0 +1,61 @@
+{
+  "name": "moodboard-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that turns your Pinterest boards into design references for AI coding assistants — official OAuth login, images the model can see, and extracted design tokens.",
+  "type": "module",
+  "bin": {
+    "moodboard-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run typecheck && npm run format:check && npm test",
+    "prepublishOnly": "npm run check && npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "pinterest",
+    "moodboard",
+    "design-tokens",
+    "ui",
+    "claude",
+    "cursor",
+    "ai"
+  ],
+  "author": "Ramgopal Bagh <ramgopalbagh009@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ramgopal99/moodboard-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ramgopal99/moodboard-mcp/issues"
+  },
+  "homepage": "https://github.com/ramgopal99/moodboard-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "jimp": "^1.6.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "prettier": "^3.10.1",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Pinterest API access / Trial approval
+    url: https://developers.pinterest.com/support/
+    about: Questions about your Pinterest app approval belong with Pinterest support.
